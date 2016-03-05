@@ -11,14 +11,14 @@ public class CallGraph {
     protected HashMap<Integer, HashSet<Integer>> nodeMap;
     protected HashMap<Integer, HashMap<Integer, Integer>> supportP;
     protected HashMap<Integer, Integer> supportF;
-    protected HashSet<String> funcSet;
+    protected HashMap<Integer, HashSet<Integer>> pairCallMap;
 
     public CallGraph() {
         functionMap = new HashMap<Integer, String>();
         nodeMap = new HashMap<Integer, HashSet<Integer>>();
         supportP = new HashMap<Integer, HashMap<Integer, Integer>>();
         supportF = new HashMap<Integer, Integer>();
-        funcSet = new HashSet<String>();
+        pairCallMap = new HashMap<Integer, HashSet<Integer>>();
     }
 
     /**
@@ -30,17 +30,33 @@ public class CallGraph {
         Collections.sort(sortedList);
         for(int i = 0; i < sortedList.size()-1; i++) {
             HashMap<Integer, Integer> supportPi;
+            HashSet<Integer> callAPairSet;
             int callAId = sortedList.get(i);
             if((supportPi = this.supportP.get(callAId)) == null) {
                 supportPi = new HashMap<Integer, Integer>();
                 this.supportP.put(callAId, supportPi);
             }
+            
+            if((callAPairSet = this.pairCallMap.get(callAId)) == null) {
+                callAPairSet = new HashSet<Integer>();
+                this.pairCallMap.put(callAId, callAPairSet);
+            }
+            
             for(int j = i+1; j < sortedList.size(); j++) {
                 int callBId = sortedList.get(j);
                 if(supportPi.get(callBId) == null) {
                     supportPi.put(callBId, 1);
                 } else {
                     supportPi.put(callBId, supportPi.get(callBId)+1);
+                }
+                
+                callAPairSet.add(callBId);
+                if(this.pairCallMap.get(callBId) == null) {
+                    HashSet <Integer> callBPairSet = new HashSet<Integer>();
+                    callBPairSet.add(callAId);
+                    this.pairCallMap.put(callBId, callBPairSet);
+                } else {
+                this.pairCallMap.get(callBId).add(callAId);
                 }
             }
         }
@@ -84,15 +100,6 @@ public class CallGraph {
         this.updateSupportP(callIdSet);
         this.nodeMap.put(nodeId, callIdSet);
     }
-
-    public HashMap<Integer, 
-	    HashMap<Integer, Integer>> getSupportP() {
-        return this.supportP;
-    }
-
-    public HashMap<Integer, Integer> getSupportF() {
-        return this.supportF;
-    }
     
     public HashMap<Integer, String> getFunctionMap() {
         return this.functionMap;
@@ -101,19 +108,17 @@ public class CallGraph {
     public HashMap<Integer,HashSet<Integer>> getNodeMap() {
         return this.nodeMap;
     }
-    /**
-     * check whether a node has a pair composed by A B (<A, B> or <B, A>)
-     * better to call this method by callAId is the checked call for checkPair <A, B> or <B,A>
-     * because if callSet doesn't have callAId, it would return false immediately
-     * after first contains check and won't check for B.
-     * @param nodeId
-     * @param callAId: the call Id that need to check
-     * @param callBId
-     * @return true if nodeId has pair <callAId, CallBId> or <callBId, callAId>
-     */
-    public boolean isNodeHasPair(int nodeId, int callAId, int callBId) { 
-        HashSet<Integer> callSet = this.nodeMap.get(nodeId);
-        return callSet.contains(callAId) && callSet.contains(callBId);
+    
+    public int getSPCount(int callAId, int callBId) {
+        return this.supportP.get(callAId).get(callBId);
+    }
+    
+    public int getSFCount(int funcId) {
+        return this.supportF.get(funcId);
+    }
+    
+    public HashSet<Integer> getPairCallSet(int callId) {
+        return this.pairCallMap.get(callId);
     }
     
     public void printNode(String nodeName) {
@@ -124,16 +129,16 @@ public class CallGraph {
             System.out.println(this.functionMap.get(callId));
         }
         System.out.println("has pair:");
-        for(Integer node1 : this.supportP.keySet()) {
-            HashMap<Integer, Integer> node1Nbr = this.supportP.get(node1);
-            for(Integer node2 : node1Nbr.keySet()) {
-                if(this.isNodeHasPair(nodeId, node1, node2)) {
-                    System.out.format("<%s,%s>\n",
-                               this.functionMap.get(node1),
-                               this.functionMap.get(node2));
-                }
-            }
-        }
+//        for(Integer node1 : this.supportP.keySet()) {
+//            HashMap<Integer, Integer> node1Nbr = this.supportP.get(node1);
+//            for(Integer node2 : node1Nbr.keySet()) {
+//                if(this.isNodeHasPair(nodeId, node1, node2)) {
+//                    System.out.format("<%s,%s>\n",
+//                               this.functionMap.get(node1),
+//                               this.functionMap.get(node2));
+//                }
+//            }
+//        }
     }
     
     public void printGraphInfo() {

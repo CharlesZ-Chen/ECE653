@@ -1,9 +1,7 @@
 package pipairJAVA;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 public class Analyzer {
     protected final int T_SUPPORT;
@@ -14,63 +12,47 @@ public class Analyzer {
         this.T_CONFIDENCE = t_confidence;
     }
  
-    public List<Bug> analyzeGraph(CallGraph g) {
-        /*In this method we traverse supportP to find bugs,
-         * thus we can use List rather than Set to store bugs
-         * (bugs are unique since pairs in supportP are unique)
-         * */
-        List<Bug> bugList = new ArrayList<Bug>();
-        HashMap<Integer, HashMap<Integer, Integer>> supportP = g.getSupportP();
-        HashMap<Integer, Integer> supportF = g.getSupportF();
+    public void analyzeGraphAndPrintBugs(CallGraph g) {
         HashMap<Integer, String> functionMap = g.getFunctionMap();
         HashMap<Integer, HashSet<Integer>> nodeMap = g.getNodeMap();
-        /*traverse supportP to find bugs (bugName of Pair with conf # > T_CONF)*/
-        for(Integer call1 : supportP.keySet()) {
-            HashMap<Integer, Integer> node1Nbr = supportP.get(call1);
-            for(Integer call2 : node1Nbr.keySet()) {
-                int cnt_pair = node1Nbr.get(call2);
-                
-                if(cnt_pair < this.T_SUPPORT)
-                    continue;
-                
-                double conf;
-                int cnt_n1 = supportF.get(call1);
-                int cnt_n2 = supportF.get(call2);
-                
-                assert (cnt_pair <= cnt_n1) && (cnt_pair <= cnt_n2);
-                
-                conf =  (cnt_pair * 100.0) / cnt_n1;
-                if(conf >= this.T_CONFIDENCE) {
-                    Bug b = new Bug(functionMap.get(call1), 
-                            functionMap.get(call2),
-                            call1,
-                            call2,
-                            cnt_pair,
-                            conf);
-                    bugList.add(b);
-                }    
-                conf = (cnt_pair * 100.0) / cnt_n2;
-                if(conf >= this.T_CONFIDENCE) {
-                    Bug b = new Bug(functionMap.get(call2), 
-                            functionMap.get(call1),
-                            call2,
-                            call1,
-                            cnt_pair,
-                            conf);
-                    bugList.add(b);
-                }
-            }    
-        }
         
-        for(Bug bug : bugList) {
-            for(int nodeId : nodeMap.keySet()) {
-                HashSet<Integer> callSet = nodeMap.get(nodeId);
-                if(callSet.contains(bug.nameHashCode) &&
-                        !callSet.contains(bug.p1HashCode))
-                        bug.addLocation(functionMap.get(nodeId));
+        for(int nodeId : nodeMap.keySet()) {
+            HashSet<Integer> callSet = nodeMap.get(nodeId);
+            for(int callId : callSet) {
+                HashSet<Integer> pairCallSet = g.getPairCallSet(callId);
+                if(pairCallSet == null)
+                    continue;
+                int cnt_call = g.getSFCount(callId);
+                for(int pairCallId : pairCallSet) {
+                    //ignore pairs already exist in this node
+                    if(callSet.contains(callId) && callSet.contains(pairCallId))
+                        continue;
+                    
+                    int cnt_pair = callId < pairCallId ? 
+                            g.getSPCount(callId, pairCallId) : g.getSPCount(pairCallId, callId);
+                    if(cnt_pair < this.T_SUPPORT)
+                        continue;
+                    double conf = (cnt_pair * 100.0) / cnt_call;    
+                    if(conf >= this.T_CONFIDENCE) {
+                        String call1 = functionMap.get(callId);
+                        String call2 = functionMap.get(pairCallId);
+                        String temp;
+                        if(call1.compareTo(call2) > 0) {
+                            temp = call1;
+                            call1 = call2;
+                            call2 = temp;
+                        }
+                        
+                        System.out.format("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", 
+                                functionMap.get(callId),
+                                functionMap.get(nodeId),
+                                call1, call2,
+                                cnt_pair,
+                                conf);
+                    }
+                }
             }
         }
-        return bugList;
     }
 
 }

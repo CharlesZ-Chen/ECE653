@@ -13,7 +13,8 @@ import java.util.regex.Pattern;
  * @author charleszhuochen
  *
  */
-public class ControllerMain implements Controller{
+public class ControllerMain{
+    
     public static void main(String [] args) {
         int t_support = 3;
         double t_confidence = 65;
@@ -40,7 +41,7 @@ public class ControllerMain implements Controller{
             System.exit(1);
         }
         
-    		Controller c = new ControllerMain();
+    		ControllerMain c = new ControllerMain();
     		Analyzer a = new Analyzer(t_support, t_confidence);
     		CallGraph g = null;
     		
@@ -51,8 +52,7 @@ public class ControllerMain implements Controller{
                 System.exit(1);
             }
     		
-    		List<Bug> bugList = a.analyzeGraph(g);
-    		c.printBugList(bugList);
+    		a.analyzeGraphAndPrintBugs(g);
     }
     
     protected Pattern callsP;
@@ -67,7 +67,6 @@ public class ControllerMain implements Controller{
     				+ ".*$");
     }
     
-	@Override
 	public CallGraph readCallGraph(String fileName) throws IOException {
 		CallGraph g = null;
 		BufferedReader in= null;
@@ -103,27 +102,5 @@ public class ControllerMain implements Controller{
 	in.close();
 //		g.printGraphInfo();
 		return g;
-	}
-	
-	@Override
-	public void printBugList(List<Bug> bugList) {
-	    for(Bug bug : bugList) {
-	        String p1, p2;
-	        if(bug.name.compareTo(bug.p1) < 0 ) {
-	            p1 = bug.name;
-	            p2 = bug.p1;
-	        } else {
-	            p1 = bug.p1;
-	            p2 = bug.name;
-	        }
-	        for(String location : bug.locationSet) {
-	        System.out.format("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n",
-	                bug.name,
-	                location,
-	                p1, p2,
-	                bug.support,
-	                bug.conf);
-	        }
-	    }
 	}
 }
