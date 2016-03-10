@@ -1,8 +1,8 @@
 package pipairJAVA;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -18,19 +18,18 @@ public class ControllerMain{
     public static void main(String [] args) {
         int t_support = 3;
         double t_confidence = 65;
-        String fileName = null;
+        
         try {
             switch(args.length) {
-                case 1: fileName = args[0]; break;
-                case 3: {
-                    fileName = args[0];
-                    t_support = Integer.parseInt(args[1]);
-                    t_confidence = Double.parseDouble(args[2]);
+                case 0: break;
+                case 2: {
+                    t_support = Integer.parseInt(args[0]);
+                    t_confidence = Double.parseDouble(args[1]);
                     break;
                     }
                 default:{
                     System.err.println("Error: mismatch number of arguments, cmd arguments sould be "
-                            + "<file_name> <T_SUPPORT> <T_CONFIDENCE> or <file_name>");
+                            + "<T_SUPPORT> <T_CONFIDENCE> or null");
                     System.exit(1);
                 }
             }
@@ -46,7 +45,7 @@ public class ControllerMain{
     		CallGraph g = null;
     		
     		try {
-    		    g = c.readCallGraph(fileName);
+    		    g = c.readCallGraph();
     		} catch (IOException e) {
                 e.printStackTrace();
                 System.exit(1);
@@ -67,11 +66,11 @@ public class ControllerMain{
     				+ ".*$");
     }
     
-	public CallGraph readCallGraph(String fileName) throws IOException {
+	public CallGraph readCallGraph() throws IOException {
 		CallGraph g = null;
 		BufferedReader in= null;
 
-		in = new BufferedReader(new FileReader(fileName));
+		in = new BufferedReader(new InputStreamReader(System.in));
 		g = new CallGraph();	
 		String thisLine = null;
 		thisLine = in.readLine();

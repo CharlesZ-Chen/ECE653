@@ -1,14 +1,11 @@
 #!/bin/bash
 SCRIPTDIR=$(cd $(dirname "$0") && pwd)
 CUR_PATH=$(pwd)
-BC_FILE=$CUR_PATH/$1
 if [ "$#" == 1 ]; then
 #printf "enter 1\n"
-opt -print-callgraph $1 2>$BC_FILE.graph 1>/dev/null
-java -Xms128m -Xmx128m -cp $SCRIPTDIR/pipairJAVA/bin pipairJAVA.ControllerMain $BC_FILE.graph 2>/dev/null
+opt -print-callgraph $1 2>&1 | java -Xms128m -Xmx128m -cp $SCRIPTDIR/pipairJAVA/bin pipairJAVA.ControllerMain 2>/dev/null
 elif [ "$#" == 3 ]; then
-opt -print-callgraph $1 2>$BC_FILE.graph 1>/dev/null
-java -Xms128m -Xmx128m -cp $SCRIPTDIR/pipairJAVA/bin pipairJAVA.ControllerMain $BC_FILE.graph $2 $3 2>/dev/null
+opt -print-callgraph $1 2>&1 | java -Xms128m -Xmx128m -cp $SCRIPTDIR/pipairJAVA/bin pipairJAVA.ControllerMain $2 $3 2>/dev/null
 else
 printf "please give me arguments <bitcode_file> or <bitcode_file> <T_SUPPORT> <T_CONFIDENCE>\n"
 fi

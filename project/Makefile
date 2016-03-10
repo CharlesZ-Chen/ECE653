@@ -1,4 +1,4 @@
 all:
-	javac -s pipairJAVA/src/pipairJAVA -d pipairJAVA/bin pipairJAVA/src/pipairJAVA/*.java
+	make -C pipairJAVA all
 clean:
-	rm -rf pipairJAVA/bin/*
+	make -C pipairJAVA clean
