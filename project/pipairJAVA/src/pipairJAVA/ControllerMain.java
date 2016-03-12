@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Just for testing upper modules which needs controller
+ * The main entry of this Program
  * @author charleszhuochen
  *
  */
@@ -18,6 +18,7 @@ public class ControllerMain{
     public static void main(String [] args) {
         int t_support = 3;
         double t_confidence = 65;
+        int expand_level = 0;//modification for Part I c
         
         try {
             switch(args.length) {
@@ -27,9 +28,15 @@ public class ControllerMain{
                     t_confidence = Double.parseDouble(args[1]);
                     break;
                     }
+                case 3: {/*modification for Part I c*/
+                    t_support = Integer.parseInt(args[0]);
+                    t_confidence = Double.parseDouble(args[1]);
+                    expand_level = Integer.parseInt(args[2]);
+                    break;
+                }
                 default:{
                     System.err.println("Error: mismatch number of arguments, cmd arguments sould be "
-                            + "<T_SUPPORT> <T_CONFIDENCE> or null");
+                            + "null or <T_SUPPORT> <T_CONFIDENCE> or <T_SUPPORT> <T_CONFIDENCE> <EXPAND_LEVEL>");
                     System.exit(1);
                 }
             }
@@ -45,7 +52,7 @@ public class ControllerMain{
     		CallGraph g = null;
     		
     		try {
-    		    g = c.readCallGraph();
+    		    g = c.readCallGraph(expand_level);
     		} catch (IOException e) {
                 e.printStackTrace();
                 System.exit(1);
@@ -66,12 +73,12 @@ public class ControllerMain{
     				+ ".*$");
     }
     
-	public CallGraph readCallGraph() throws IOException {
+	public CallGraph readCallGraph(int expand_level) throws IOException {
 		CallGraph g = null;
 		BufferedReader in= null;
 
 		in = new BufferedReader(new InputStreamReader(System.in));
-		g = new CallGraph();	
+		g = new CallGraph(expand_level);	
 		String thisLine = null;
 		thisLine = in.readLine();
 		while(true) {
@@ -92,13 +99,15 @@ public class ControllerMain{
 					break;
 			}
 		g.addNode(nodeName, callNameList);
-//				g.printNode(nodeName);
 		} else {
 			thisLine = in.readLine();
 		}
 	}
 
 	in.close();
+	/*modification for Part I c*/
+	    g.updateSupport();
+//	    g.printNodes();
 //		g.printGraphInfo();
 		return g;
 	}

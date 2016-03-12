@@ -30,8 +30,11 @@ public class Analyzer {
                     
                     int cnt_pair = callId < pairCallId ? 
                             g.getSPCount(callId, pairCallId) : g.getSPCount(pairCallId, callId);
-                    if(cnt_pair < this.T_SUPPORT)
+                    if(cnt_pair < this.T_SUPPORT){
+                        
                         continue;
+                    }
+                        
                     double conf = (cnt_pair * 100.0) / cnt_call;    
                     if(conf >= this.T_CONFIDENCE) {
                         String call1 = functionMap.get(callId);
