@@ -139,12 +139,23 @@ public class CallGraph {
             for(int callId : nodeMapDeepCopy.get(nodeId)){
                 HashSet<Integer> callCallSet = nodeMapDeepCopy.get(callId);
                 if(callCallSet.size() > 0){
+                    if(isContainExternal(callCallSet))
+                        continue;
                     nodeCallSet.remove(callId);
                     nodeCallSet.addAll(callCallSet);
                 }
             }
         }
     }
+    
+    protected boolean isContainExternal(HashSet<Integer> callSet) {
+        for(int callId : callSet){
+            if(this.nodeMap.get(callId).size() == 0)
+                return true;
+        }
+        return false;
+    }
+
     /**modification for Part I c
      * deep clone current node map
      * @return a deep copy of current node map
