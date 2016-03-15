@@ -136,18 +136,23 @@ public class CallGraph {
         HashMap<Integer, HashSet<Integer>> nodeMapDeepCopy = deepcloneNodeMap();
         for(int nodeId : nodeMapDeepCopy.keySet()) {
             HashSet<Integer> nodeCallSet = this.nodeMap.get(nodeId);
-            for(int callId : nodeMapDeepCopy.get(nodeId)){
-                HashSet<Integer> callCallSet = nodeMapDeepCopy.get(callId);
-                if(callCallSet.size() > 0){
-                    if(isContainExternal(callCallSet))
+            for(int calleeId : nodeMapDeepCopy.get(nodeId)){
+                HashSet<Integer> calleeCallSet = nodeMapDeepCopy.get(calleeId);
+                if(calleeCallSet.size() > 0){
+                    if(isContainExternal(calleeCallSet))
                         continue;
-                    nodeCallSet.remove(callId);
-                    nodeCallSet.addAll(callCallSet);
+                    nodeCallSet.remove(calleeId);
+                    nodeCallSet.addAll(calleeCallSet);
                 }
             }
         }
     }
-    
+
+    /**
+     * check whether a callSet contain an "external" node
+     * @param callSet
+     * @return
+     */
     protected boolean isContainExternal(HashSet<Integer> callSet) {
         for(int callId : callSet){
             if(this.nodeMap.get(callId).size() == 0)
