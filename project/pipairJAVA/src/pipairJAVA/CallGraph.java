@@ -1,28 +1,29 @@
 package pipairJAVA;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class CallGraph {
     public HashMap<Integer, String> functionMap;
-    public HashMap<Integer, HashSet<Integer>> nodeMap;
+    public HashMap<Integer, HashSet<Integer>> origNodeMap;
     public HashMap<Integer, HashMap<Integer, Integer>> supportP;
     public HashMap<Integer, Integer> supportF;
     public HashMap<Integer, HashSet<Integer>> pairCallMap;
+    public HashMap<Integer, HashSet<Integer>> expandNodeMap;
     public final int EXPAND_LEVEL;
 
     public CallGraph(int expand_level) {
         functionMap = new HashMap<Integer, String>();
-        nodeMap = new HashMap<Integer, HashSet<Integer>>();
+        origNodeMap = new HashMap<Integer, HashSet<Integer>>();
         supportP = new HashMap<Integer, HashMap<Integer, Integer>>();
         supportF = new HashMap<Integer, Integer>();
         pairCallMap = new HashMap<Integer, HashSet<Integer>>();
+        /*modification for Part I c*/
         this.EXPAND_LEVEL = expand_level;
+        this.expandNodeMap = null;
     }
 
     /**
@@ -89,7 +90,7 @@ public class CallGraph {
      */
     public void addNode(String nodeName, List<String> callNameList) {
         int nodeId = nodeName.hashCode();
-        if(this.nodeMap.containsKey(nodeId))
+        if(this.origNodeMap.containsKey(nodeId))
             return;
 
         this.functionMap.put(nodeId, nodeName);
@@ -108,7 +109,7 @@ public class CallGraph {
         this.updateSupportP(callIdSet);
         }
         
-        this.nodeMap.put(nodeId, callIdSet);
+        this.origNodeMap.put(nodeId, callIdSet);
     }
     
     /**modification for Part I c
@@ -118,33 +119,47 @@ public class CallGraph {
         /*if expand level is 0, then Support is already update during addNode*/
         if(this.EXPAND_LEVEL == 0)
             return;
-        /*else expand call graph first and then update Support*/
+        /*make a deep copy for expanding*/
+        this.expandNodeMap = deepcloneNodeMap();
+        /*expand call graph first and then update Support*/
         for(int i=0; i < this.EXPAND_LEVEL; i++) {
             expandGraph();
         }
-        
-        for(HashSet<Integer> callIdSet : this.nodeMap.values()){
+        /*using expandNodeMap to update SupportF & P*/
+        for(HashSet<Integer> callIdSet : this.expandNodeMap.values()){
             this.updateSupportF(callIdSet);
             this.updateSupportP(callIdSet);
         }
     }
     
     /**modification for Part I c
-     * expand the graph
+     * expand the graph (expandNodeMap) according to the original graph (origNodeMap)
      */
     protected void expandGraph() {
-        HashMap<Integer, HashSet<Integer>> nodeMapDeepCopy = deepcloneNodeMap();
-        for(int nodeId : nodeMapDeepCopy.keySet()) {
-            HashSet<Integer> nodeCallSet = this.nodeMap.get(nodeId);
-            for(int calleeId : nodeMapDeepCopy.get(nodeId)){
-                HashSet<Integer> calleeCallSet = nodeMapDeepCopy.get(calleeId);
+        for(int nodeId : this.expandNodeMap.keySet()) {
+            HashSet<Integer> nodeCallSet = this.expandNodeMap.get(nodeId);
+            /*do not expand a node that only contain external nodes or contain nothing at all*/
+            if(nodeCallSet.size() == 0)
+                continue;
+
+            HashSet<Integer> removeSet = new HashSet<Integer>();
+            HashSet<Integer> addSet = new HashSet<Integer>();
+            for(int calleeId : nodeCallSet){
+                HashSet<Integer> calleeCallSet = this.origNodeMap.get(calleeId); //the expand callSet should refer to original call Graph
                 if(calleeCallSet.size() > 0){
+                    /*using this if-statement to NOT expand a node that contains external node (printf, fputs, etc.)
+                     * comment out this to expand all nodes*/
                     if(isContainExternal(calleeCallSet))
                         continue;
-                    nodeCallSet.remove(calleeId);
-                    nodeCallSet.addAll(calleeCallSet);
+
+                    /*collect the remove & add info first*/
+                    removeSet.add(calleeId);
+                    addSet.addAll(calleeCallSet);
                 }
             }
+            /*propagate updates to the nodeCallSet at once*/
+           nodeCallSet.removeAll(removeSet);
+           nodeCallSet.addAll(addSet);
         }
     }
 
@@ -155,7 +170,7 @@ public class CallGraph {
      */
     protected boolean isContainExternal(HashSet<Integer> callSet) {
         for(int callId : callSet){
-            if(this.nodeMap.get(callId).size() == 0)
+            if(this.origNodeMap.get(callId).size() == 0)
                 return true;
         }
         return false;
@@ -167,15 +182,15 @@ public class CallGraph {
      */
     protected HashMap<Integer, HashSet<Integer>> deepcloneNodeMap() {
         HashMap<Integer, HashSet<Integer>> deepclone = new HashMap<Integer, HashSet<Integer>>();
-        for(int nodeId : this.nodeMap.keySet()) {
-            HashSet<Integer> origV = this.nodeMap.get(nodeId);
+        for(int nodeId : this.origNodeMap.keySet()) {
+            HashSet<Integer> origV = this.origNodeMap.get(nodeId);
             HashSet<Integer> deepCopyV = new HashSet<Integer>();
             for(Integer e : origV) {
                 deepCopyV.add(e);
             }
             deepclone.put(nodeId, deepCopyV);
         }
-        return this.nodeMap == null ? null : deepclone;
+        return deepclone;
     }
 
     public HashMap<Integer, String> getFunctionMap() {
@@ -183,7 +198,7 @@ public class CallGraph {
     }
     
     public HashMap<Integer,HashSet<Integer>> getNodeMap() {
-        return this.nodeMap;
+        return this.EXPAND_LEVEL > 0 ? this.expandNodeMap : this.origNodeMap;
     }
     
     public int getSPCount(int callAId, int callBId) {
@@ -199,17 +214,17 @@ public class CallGraph {
     }
     
     public void printNodes() {
-        for(int nodeId : this.nodeMap.keySet()) {
+        for(int nodeId : this.origNodeMap.keySet()) {
             printNode(this.functionMap.get(nodeId));
         }
     }
     
     public void printNode(String nodeName) {
         int nodeId = nodeName.hashCode();
-        HashSet<Integer> callSet = this.nodeMap.get(nodeId);
+        HashSet<Integer> callSet = this.origNodeMap.get(nodeId);
         System.out.format("node %s calls:\n",
                 this.functionMap.get(nodeId));
-        for(int callId : this.nodeMap.get(nodeId)) {
+        for(int callId : this.origNodeMap.get(nodeId)) {
             System.out.println(this.functionMap.get(callId));
         }
         
